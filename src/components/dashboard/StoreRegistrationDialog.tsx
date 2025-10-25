@@ -36,50 +36,32 @@ const StoreRegistrationDialog = ({ open, onOpenChange, onSuccess }: StoreRegistr
     setLoading(true);
 
     try {
-      // Create user account for store owner
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.ownerEmail,
-        password: formData.ownerPassword,
-        options: {
-          data: { full_name: formData.ownerName },
+      const { data, error } = await supabase.functions.invoke("create-store-owner", {
+        body: {
+          storeName: formData.storeName,
+          ownerName: formData.ownerName,
+          ownerEmail: formData.ownerEmail,
+          ownerPassword: formData.ownerPassword,
+          phone: formData.phone,
+          address: formData.address,
+          gstNumber: formData.gstNumber,
         },
       });
 
-      if (authError) throw authError;
+      if (error) throw error;
 
-      if (authData.user) {
-        // Create store
-        const { error: storeError } = await supabase.from("stores").insert({
-          name: formData.storeName,
-          owner_id: authData.user.id,
-          phone: formData.phone,
-          address: formData.address,
-          gst_number: formData.gstNumber,
-        });
-
-        if (storeError) throw storeError;
-
-        // Assign store_owner role
-        const { error: roleError } = await supabase.from("user_roles").insert({
-          user_id: authData.user.id,
-          role: "store_owner",
-        });
-
-        if (roleError) throw roleError;
-
-        toast.success("Store registered successfully!");
-        setFormData({
-          storeName: "",
-          ownerName: "",
-          ownerEmail: "",
-          ownerPassword: "",
-          phone: "",
-          address: "",
-          gstNumber: "",
-        });
-        onOpenChange(false);
-        onSuccess();
-      }
+      toast.success("Store registered successfully!");
+      setFormData({
+        storeName: "",
+        ownerName: "",
+        ownerEmail: "",
+        ownerPassword: "",
+        phone: "",
+        address: "",
+        gstNumber: "",
+      });
+      onOpenChange(false);
+      onSuccess();
     } catch (error: any) {
       toast.error(error.message || "Failed to register store");
     } finally {
