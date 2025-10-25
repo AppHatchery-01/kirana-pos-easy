@@ -1,7 +1,7 @@
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Store, Package, TrendingUp, Users, LogOut, Plus } from "lucide-react";
+import { Store, Users, LogOut, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import StoreRegistrationDialog from "./StoreRegistrationDialog";
@@ -15,8 +15,6 @@ const AdminDashboard = ({ user, onSignOut }: AdminDashboardProps) => {
   const [stats, setStats] = useState({
     totalStores: 0,
     activeStores: 0,
-    totalProducts: 0,
-    todaySales: 0,
   });
   const [stores, setStores] = useState<any[]>([]);
   const [showStoreDialog, setShowStoreDialog] = useState(false);
@@ -38,25 +36,9 @@ const AdminDashboard = ({ user, onSignOut }: AdminDashboardProps) => {
     const totalStores = storesData?.length || 0;
     const activeStores = storesData?.filter((s) => s.is_active).length || 0;
 
-    // Fetch products count
-    const { count: productsCount } = await supabase
-      .from("products")
-      .select("*", { count: "exact", head: true });
-
-    // Fetch today's sales
-    const today = new Date().toISOString().split("T")[0];
-    const { data: salesData } = await supabase
-      .from("sales")
-      .select("total_amount")
-      .gte("created_at", today);
-
-    const todaySales = salesData?.reduce((sum, sale) => sum + parseFloat(sale.total_amount.toString()), 0) || 0;
-
     setStats({
       totalStores,
       activeStores,
-      totalProducts: productsCount || 0,
-      todaySales,
     });
   };
 
@@ -79,7 +61,7 @@ const AdminDashboard = ({ user, onSignOut }: AdminDashboardProps) => {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         {/* Stats Grid */}
-        <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-8 grid gap-6 md:grid-cols-2">
           <StatsCard
             title="Total Stores"
             value={stats.totalStores.toString()}
@@ -90,18 +72,6 @@ const AdminDashboard = ({ user, onSignOut }: AdminDashboardProps) => {
             title="Active Stores"
             value={stats.activeStores.toString()}
             icon={<Users className="h-8 w-8" />}
-            gradient="bg-gradient-accent"
-          />
-          <StatsCard
-            title="Total Products"
-            value={stats.totalProducts.toString()}
-            icon={<Package className="h-8 w-8" />}
-            gradient="bg-gradient-primary"
-          />
-          <StatsCard
-            title="Today's Sales"
-            value={`₹${stats.todaySales.toFixed(2)}`}
-            icon={<TrendingUp className="h-8 w-8" />}
             gradient="bg-gradient-accent"
           />
         </div>
