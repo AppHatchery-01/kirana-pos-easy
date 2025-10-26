@@ -20,6 +20,7 @@ export type Database = {
           category: string | null
           cost_price: number | null
           created_at: string | null
+          expiry_date: string | null
           id: string
           is_active: boolean | null
           min_stock_level: number | null
@@ -37,6 +38,7 @@ export type Database = {
           category?: string | null
           cost_price?: number | null
           created_at?: string | null
+          expiry_date?: string | null
           id?: string
           is_active?: boolean | null
           min_stock_level?: number | null
@@ -54,6 +56,7 @@ export type Database = {
           category?: string | null
           cost_price?: number | null
           created_at?: string | null
+          expiry_date?: string | null
           id?: string
           is_active?: boolean | null
           min_stock_level?: number | null
