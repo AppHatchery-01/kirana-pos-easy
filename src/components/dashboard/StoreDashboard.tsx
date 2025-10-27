@@ -14,6 +14,7 @@ interface StoreDashboardProps {
 const StoreDashboard = ({ user, onSignOut }: StoreDashboardProps) => {
   const navigate = useNavigate();
   const [store, setStore] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     todaySales: 0,
     totalProducts: 0,
@@ -25,47 +26,62 @@ const StoreDashboard = ({ user, onSignOut }: StoreDashboardProps) => {
   }, [user.id]);
 
   const fetchStoreData = async () => {
-    // Fetch user's store
-    const { data: storeData } = await supabase
-      .from("stores")
-      .select("*")
-      .eq("owner_id", user.id)
-      .single();
+    try {
+      // Fetch user's store
+      const { data: storeData } = await supabase
+        .from("stores")
+        .select("*")
+        .eq("owner_id", user.id)
+        .single();
 
-    if (storeData) {
-      setStore(storeData);
+      if (storeData) {
+        setStore(storeData);
 
-      // Fetch products count
-      const { count: productsCount } = await supabase
-        .from("products")
-        .select("*", { count: "exact", head: true })
-        .eq("store_id", storeData.id);
+        // Fetch products count
+        const { count: productsCount } = await supabase
+          .from("products")
+          .select("*", { count: "exact", head: true })
+          .eq("store_id", storeData.id);
 
-      // Fetch low stock items (items at or below min_stock_level)
-      const { data: productsData } = await supabase
-        .from("products")
-        .select("stock_quantity, min_stock_level")
-        .eq("store_id", storeData.id);
-      
-      const lowStockCount = productsData?.filter(p => p.stock_quantity <= p.min_stock_level).length || 0;
+        // Fetch low stock items (items at or below min_stock_level)
+        const { data: productsData } = await supabase
+          .from("products")
+          .select("stock_quantity, min_stock_level")
+          .eq("store_id", storeData.id);
+        
+        const lowStockCount = productsData?.filter(p => p.stock_quantity <= p.min_stock_level).length || 0;
 
-      // Fetch today's sales
-      const today = new Date().toISOString().split("T")[0];
-      const { data: salesData } = await supabase
-        .from("sales")
-        .select("total_amount")
-        .eq("store_id", storeData.id)
-        .gte("created_at", today);
+        // Fetch today's sales
+        const today = new Date().toISOString().split("T")[0];
+        const { data: salesData } = await supabase
+          .from("sales")
+          .select("total_amount")
+          .eq("store_id", storeData.id)
+          .gte("created_at", today);
 
-      const todaySales = salesData?.reduce((sum, sale) => sum + parseFloat(sale.total_amount.toString()), 0) || 0;
+        const todaySales = salesData?.reduce((sum, sale) => sum + parseFloat(sale.total_amount.toString()), 0) || 0;
 
-      setStats({
-        todaySales,
-        totalProducts: productsCount || 0,
-        lowStockItems: lowStockCount || 0,
-      });
+        setStats({
+          todaySales,
+          totalProducts: productsCount || 0,
+          lowStockItems: lowStockCount || 0,
+        });
+      }
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!store) {
     return (
@@ -129,7 +145,7 @@ const StoreDashboard = ({ user, onSignOut }: StoreDashboardProps) => {
             title="Start Billing"
             description="Create new sale and process payments"
             icon={<ShoppingBag className="h-12 w-12" />}
-            onClick={() => navigate("/pos")}
+            onClick={() => navigate("/sales")}
             gradient="bg-gradient-primary"
           />
           <QuickActionCard
