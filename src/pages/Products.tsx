@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Plus, Search } from "lucide-react";
+import { ArrowLeft, Plus, Search, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import ProductForm from "@/components/products/ProductForm";
 import ProductList from "@/components/products/ProductList";
+import QuickAddProduct from "@/components/products/QuickAddProduct";
 import { User } from "@supabase/supabase-js";
 
 const Products = () => {
@@ -18,6 +19,8 @@ const Products = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [lastProduct, setLastProduct] = useState<any>(null);
+  const [addMode, setAddMode] = useState<"quick" | "detailed">("quick");
 
   useEffect(() => {
     checkAuthAndStore();
@@ -60,9 +63,24 @@ const Products = () => {
     setShowForm(true);
   };
 
-  const handleFormClose = () => {
+  const handleFormClose = async () => {
     setShowForm(false);
     setEditingProduct(null);
+    
+    // Fetch the last added product for quick duplication
+    try {
+      const { data } = await supabase
+        .from("products")
+        .select("*")
+        .eq("store_id", storeId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (data) setLastProduct(data);
+    } catch (error) {
+      // Ignore error
+    }
   };
 
   if (loading) {
@@ -82,12 +100,33 @@ const Products = () => {
             <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-2xl font-bold">Product Management</h1>
+            <div>
+              <h1 className="text-2xl font-bold">Product Management</h1>
+              <p className="text-xs text-muted-foreground">Add and manage inventory</p>
+            </div>
           </div>
-          <Button onClick={handleAddProduct}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Product
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => {
+                setAddMode("quick");
+                handleAddProduct();
+              }}
+              variant="default"
+            >
+              <Zap className="mr-2 h-4 w-4" />
+              Quick Add
+            </Button>
+            <Button 
+              onClick={() => {
+                setAddMode("detailed");
+                handleAddProduct();
+              }}
+              variant="outline"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Detailed
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -96,15 +135,30 @@ const Products = () => {
         {showForm ? (
           <Card>
             <CardHeader>
-              <CardTitle>{editingProduct ? "Edit Product" : "Add New Product"}</CardTitle>
+              <CardTitle>
+                {editingProduct 
+                  ? "Edit Product" 
+                  : addMode === "quick" 
+                    ? "⚡ Quick Add Product" 
+                    : "Add New Product"
+                }
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <ProductForm
-                storeId={storeId!}
-                product={editingProduct}
-                onSuccess={handleFormClose}
-                onCancel={handleFormClose}
-              />
+              {editingProduct || addMode === "detailed" ? (
+                <ProductForm
+                  storeId={storeId!}
+                  product={editingProduct}
+                  onSuccess={handleFormClose}
+                  onCancel={handleFormClose}
+                />
+              ) : (
+                <QuickAddProduct
+                  storeId={storeId!}
+                  onSuccess={handleFormClose}
+                  lastProduct={lastProduct}
+                />
+              )}
             </CardContent>
           </Card>
         ) : (

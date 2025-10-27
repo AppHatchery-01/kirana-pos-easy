@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 
+const CATEGORIES = ["Food", "Beverages", "Kitchen", "Household", "Personal Care", "Electronics", "Stationery", "Others"];
+
 const productSchema = z.object({
   name: z.string().trim().min(1, "Product name is required").max(200),
   sku: z.string().trim().max(100).optional(),
@@ -58,6 +60,7 @@ interface ProductFormProps {
 
 const ProductForm = ({ storeId, product, onSuccess, onCancel }: ProductFormProps) => {
   const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(product?.category || "");
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -141,11 +144,24 @@ const ProductForm = ({ storeId, product, onSuccess, onCancel }: ProductFormProps
             control={form.control}
             name="category"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="md:col-span-2">
                 <FormLabel>Category</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Electronics, Food" {...field} />
-                </FormControl>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORIES.map((cat) => (
+                    <Button
+                      key={cat}
+                      type="button"
+                      variant={selectedCategory === cat ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCategory(cat);
+                        form.setValue("category", cat);
+                      }}
+                    >
+                      {cat}
+                    </Button>
+                  ))}
+                </div>
                 <FormMessage />
               </FormItem>
             )}
