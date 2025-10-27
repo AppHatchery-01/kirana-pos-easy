@@ -27,10 +27,23 @@ interface POSInterfaceProps {
   storeId: string;
 }
 
+const CATEGORIES = [
+  "All",
+  "Food",
+  "Beverages",
+  "Kitchen",
+  "Household",
+  "Personal Care",
+  "Electronics",
+  "Stationery",
+  "Others",
+];
+
 const POSInterface = ({ storeId }: POSInterfaceProps) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showInvoice, setShowInvoice] = useState(false);
   const [lastSaleId, setLastSaleId] = useState<string | null>(null);
@@ -42,17 +55,26 @@ const POSInterface = ({ storeId }: POSInterfaceProps) => {
   }, [storeId]);
 
   useEffect(() => {
+    let filtered = products;
+
+    // Filter by category
+    if (selectedCategory !== "All") {
+      filtered = filtered.filter(
+        (p) => p.category?.toLowerCase() === selectedCategory.toLowerCase()
+      );
+    }
+
+    // Filter by search query
     if (searchQuery) {
-      const filtered = products.filter(
+      filtered = filtered.filter(
         (p) =>
           p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           p.category?.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      setFilteredProducts(filtered);
-    } else {
-      setFilteredProducts(products);
     }
-  }, [searchQuery, products]);
+
+    setFilteredProducts(filtered);
+  }, [searchQuery, selectedCategory, products]);
 
   const loadProducts = async () => {
     try {
@@ -253,7 +275,23 @@ const POSInterface = ({ storeId }: POSInterfaceProps) => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2">
         <Card className="p-6">
-          <div className="mb-6">
+          <div className="mb-6 space-y-4">
+            {/* Category Filter */}
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {CATEGORIES.map((category) => (
+                <Button
+                  key={category}
+                  variant={selectedCategory === category ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(category)}
+                  className="whitespace-nowrap"
+                >
+                  {category}
+                </Button>
+              ))}
+            </div>
+
+            {/* Search Bar */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
